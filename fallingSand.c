@@ -62,8 +62,8 @@ void handleSand(sand** sands, uint8_t* sandLength, HANDLE hConsole, uint8_t* san
             right = sands[i]->currPos.X != WIDTH-1 && sandHeight[sands[i]->currPos.X+1] > sandHeight[sands[i]->currPos.X];
 
             if(left && right){
-                if(rand()%2==0) left = true;
-                else right = true;
+                if(rand()%2==0) left = false;
+                else right = false;
             }
 
             if(left){
@@ -101,6 +101,7 @@ void renderSand(sand** sands, uint8_t sandLength, HANDLE hConsole){
 }
 
 int main() {
+    system("cls");
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     if (hConsole == INVALID_HANDLE_VALUE) return EXIT_FAILURE;
 
@@ -140,11 +141,7 @@ int main() {
             sand* new  = createSand(cursorPos.X,cursorPos.Y, colorIndex);
             addSand(new, sands, &sandLength);
             colorIndex++;
-            // printf("%d",sandLength);
         }
-        
-        // SetConsoleCursorPosition(hConsole,infoPos);
-        // printf("WIDTH:%d HEIGHT:%d Sand:%d ",WIDTH, HEIGHT,sandLength);
         
         SetConsoleCursorPosition(hConsole,cursorPos);
         printf("");
