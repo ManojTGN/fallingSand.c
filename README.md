@@ -8,8 +8,9 @@ experience the soothing flow of sand as it reacts realistically
 > [!NOTE]  
 > Controls are hardcoded and can't be customized!
 
+<kbd>esc</kbd>   - Exit\
 <kbd><</kbd> <kbd>></kbd>  - Movement\
-<kbd>enter</kbd>       - Place Sand\
+<kbd>enter</kbd>       - Place Sand
 
 ## Build
 ```bash
