@@ -7,9 +7,10 @@
 #define SAND_LIMIT 1000
 
 typedef struct singleSandParticle{
-    bool isPlaced;
     char* color;
+    bool isPlaced;
     char particle;
+
     COORD prevPos;
     COORD currPos;
 } sand;
@@ -19,7 +20,7 @@ sand* createSand(uint8_t x, uint8_t y, uint8_t color){
     new->currPos.X = x;
     new->currPos.Y = y;
 
-    char particles[] = "#$%&*N.*-";
+    char particles[] = "#$%&*N.*-\"";
     new->particle = particles[rand() % 10]; 
 
     new->color = (char*) calloc(12,sizeof(char));
@@ -114,7 +115,6 @@ int main() {
 
     uint8_t colorIndex = 1;
     COORD cursorPos = {0,0};
-    COORD infoPos = {WIDTH+1,0};
 
     uint8_t sandLength = 0;
     sand** sands = (sand**) calloc(SAND_LIMIT, sizeof(sand*));
@@ -125,17 +125,8 @@ int main() {
     while(1){
         if (GetAsyncKeyState(VK_ESCAPE) & 0x8000) break;
 
-        if(GetAsyncKeyState(VK_LEFT) & 0x8000 && cursorPos.X != 0    ){
-            SetConsoleCursorPosition(hConsole,cursorPos);
-            printf(" ");
-            cursorPos.X -= 1;
-        }
-
-        if(GetAsyncKeyState(VK_RIGHT) & 0x8000 && cursorPos.X != WIDTH-1){
-            SetConsoleCursorPosition(hConsole,cursorPos);
-            printf(" ");
-            cursorPos.X += 1;
-        }
+        if(GetAsyncKeyState(VK_LEFT) & 0x8000 && cursorPos.X != 0 )             cursorPos.X -= 1;
+        else if(GetAsyncKeyState(VK_RIGHT) & 0x8000 && cursorPos.X != WIDTH-1)  cursorPos.X += 1;
         
         if (GetAsyncKeyState(VK_RETURN) & 0x8000 && sandHeight[cursorPos.X] > 1) {
             sand* new  = createSand(cursorPos.X,cursorPos.Y, colorIndex);
@@ -143,15 +134,11 @@ int main() {
             colorIndex++;
         }
         
-        SetConsoleCursorPosition(hConsole,cursorPos);
-        printf("");
-
-
+        SetConsoleCursorPosition(hConsole,cursorPos);printf("");
 
         handleSand(sands, &sandLength, hConsole, sandHeight, WIDTH);
         renderSand(sands, sandLength, hConsole);
-        Sleep(2);
-
+        Sleep(1);
     }
 
     return 0;
