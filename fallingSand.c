@@ -13,7 +13,20 @@ typedef struct singleSandParticle{
 
     COORD prevPos;
     COORD currPos;
+
+    struct singleSandParticle* _nextProcess;
 } sand;
+
+bool isSandOverlaps(sand* overlappingSand, sand* sands){
+    if(sands==NULL) return false;
+
+    for(sand* sandItr = sands; sandItr!=NULL; sandItr=sandItr->_nextProcess){
+        if(overlappingSand != sandItr && overlappingSand->currPos.X==sandItr->currPos.X && overlappingSand->currPos.Y==sandItr->currPos.Y)
+            return true;
+    }
+
+    return false;
+}
 
 sand* createSand(uint8_t x, uint8_t y, uint8_t color){
     sand* new = (sand*) calloc(1, sizeof(sand));
@@ -29,38 +42,45 @@ sand* createSand(uint8_t x, uint8_t y, uint8_t color){
     return new;
 }
 
-bool addSand(sand* new, sand** sands, uint8_t* sandLength){
+bool addSand(sand* new, sand* sands, uint8_t* sandLength){
     if(new == NULL || *sandLength == SAND_LIMIT) return false;
 
-    for(uint8_t i = 0; i < *sandLength; i++){
-        if(sands[i] == NULL){
-            sands[i] = new;
-            return true;
-        }
+    if(sands==NULL){
+        sands=new;
+        return true;
     }
 
-    sands[*sandLength] = new;
+    sand* tmpSand;
+    for(tmpSand = sands;tmpSand->_nextProcess!=NULL; tmpSand=tmpSand->_nextProcess);
+
+    tmpSand->_nextProcess = new;
     *sandLength += 1;
 
     return true;
 }
 
-void removeSand(uint8_t index, sand** sands, uint8_t* sandLength){
-    if(index == *sandLength-1) *sandLength--;
-    free(sands[index]);
-    sands[index] = NULL;
+void removeSand(sand* rsand, sand* sands, uint8_t* sandLength){
+    sand* sandItr;
+    sand* prevSand = NULL;
+    for(sandItr = sands;sandItr!=rsand; sandItr=sandItr->_nextProcess){
+        prevSand = sandItr;
+    }
+
+    if(sandItr == NULL || prevSand == NULL) return;
+    prevSand->_nextProcess = sandItr->_nextProcess;
+    free(rsand);
 }
 
-void handleSand(sand** sands, uint8_t* sandLength, HANDLE hConsole, uint8_t* sandHeight, uint8_t WIDTH){
-    for(uint8_t i = 0; i < *sandLength; i++){
-        if(sands[i] == NULL || sands[i]->isPlaced) continue;
+void handleSand(sand* sands, uint8_t* sandLength, HANDLE hConsole, uint8_t* sandHeight, uint8_t WIDTH){
+    for(sand* sandItr = sands; sandItr!=NULL; sandItr = sandItr->_nextProcess){
+        if(sandItr->isPlaced) continue;
         
-        if(sands[i]->currPos.Y+1 >= sandHeight[sands[i]->currPos.X]){
-            sands[i]->prevPos = sands[i]->currPos;
+        if(sandItr->currPos.Y+1 >= sandHeight[sandItr->currPos.X]){
+            sandItr->prevPos = sandItr->currPos;
 
             bool left,right;
-            left = sands[i]->currPos.X != 0 && sandHeight[sands[i]->currPos.X-1] > sandHeight[sands[i]->currPos.X];
-            right = sands[i]->currPos.X != WIDTH-1 && sandHeight[sands[i]->currPos.X+1] > sandHeight[sands[i]->currPos.X];
+            left = sandItr->currPos.X != 0 && sandHeight[sandItr->currPos.X-1] > sandHeight[sandItr->currPos.X];
+            right = sandItr->currPos.X != WIDTH-1 && sandHeight[sandItr->currPos.X+1] > sandHeight[sandItr->currPos.X];
 
             if(left && right){
                 if(rand()%2==0) left = false;
@@ -68,36 +88,45 @@ void handleSand(sand** sands, uint8_t* sandLength, HANDLE hConsole, uint8_t* san
             }
 
             if(left){
-                sands[i]->currPos.Y += 1;
-                sands[i]->currPos.X -= 1;
+                sandItr->currPos.Y += 1;
+                sandItr->currPos.X -= 1;
+
+                if(isSandOverlaps(sandItr,sands)){
+                    sandItr->currPos.Y -= 1;
+                    sandItr->currPos.X += 1;
+                }
             }else if(right){
-                sands[i]->currPos.Y += 1;
-                sands[i]->currPos.X += 1;
+                sandItr->currPos.Y += 1;
+                sandItr->currPos.X += 1;
+                if(isSandOverlaps(sandItr,sands)){
+                    sandItr->currPos.Y -= 1;
+                    sandItr->currPos.X -= 1;
+                }
             }else{
-                sandHeight[sands[i]->currPos.X]-=1;
+                sandHeight[sandItr->currPos.X]-=1;
                 // removeSand(i,sands,sandLength);
-                sands[i]->isPlaced = true;
+                sandItr->isPlaced = true;
                 continue;
             }
 
             continue;
         }
         
-        sands[i]->prevPos = sands[i]->currPos;
-        sands[i]->currPos.Y += 1;
+        sandItr->prevPos = sandItr->currPos;
+        sandItr->currPos.Y += 1;
     }
     
 }
 
-void renderSand(sand** sands, uint8_t sandLength, HANDLE hConsole){
-    for(uint8_t i = 0; i < sandLength; i++){
-        if(sands[i] == NULL || sands[i]->isPlaced) continue;
+void renderSand(sand* sands, uint8_t sandLength, HANDLE hConsole){
+    for(sand* sandItr = sands; sandItr!=NULL; sandItr = sandItr->_nextProcess){
+        if(sandItr->isPlaced) continue;
 
-        SetConsoleCursorPosition(hConsole, sands[i]->prevPos);
+        SetConsoleCursorPosition(hConsole, sandItr->prevPos);
         printf(" ");
 
-        SetConsoleCursorPosition(hConsole, sands[i]->currPos);
-        printf("%s%c",sands[i]->color,sands[i]->particle);
+        SetConsoleCursorPosition(hConsole, sandItr->currPos);
+        printf("%s%c",sandItr->color,sandItr->particle);
     }
 }
 
@@ -117,7 +146,7 @@ int main() {
     COORD cursorPos = {0,0};
 
     uint8_t sandLength = 0;
-    sand** sands = (sand**) calloc(SAND_LIMIT, sizeof(sand*));
+    sand* sands = NULL;
 
     uint8_t* sandHeight = (uint8_t*) calloc(WIDTH, sizeof(uint8_t));
     memset(sandHeight,HEIGHT,sizeof(uint8_t)*WIDTH);
@@ -130,7 +159,11 @@ int main() {
         
         if (GetAsyncKeyState(VK_RETURN) & 0x8000 && sandHeight[cursorPos.X] > 1) {
             sand* new  = createSand(cursorPos.X,cursorPos.Y, colorIndex);
-            addSand(new, sands, &sandLength);
+            if(sands==NULL){
+                sands = new;
+            }else{
+                addSand(new, sands, &sandLength);
+            }
             colorIndex++;
         }
         
